@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     Kktt Free Room Announce
- * Plugin URI:      
+ * Plugin URI:
  * Description:     Let you know when the room under contract becomes vacant room.
  * Author:          Hibou
  * Author URI:      https://private.hibou-web.com
@@ -585,7 +585,7 @@ Web :
 	}
 
 	/**
-	 * Output Post Notifier page form.
+	 * Output KKTT free room announce page form.
 	 */
 	public function kktt_free_room_announce_options_page() {
 
