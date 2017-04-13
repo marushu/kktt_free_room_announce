@@ -1,0 +1,74 @@
+@charset "utf-8";
+
+.repository_outer {
+
+  display: flex;
+  flex-direction: row;
+
+}
+
+.each_repository {
+  flex: 0 0 23%;
+}
+
+.each_repository table {
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  width: 100%;
+}
+
+.each_repository td {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+
+.each_repository input[type="radio"] {
+  margin: 0;
+}
+
+.room_label {
+  font-size: 12px;
+  margin-left: -2px;
+  margin-right: 5px;
+}
+
+.form-table td p {
+  color: #61849c;
+}
+
+.form-table td p.sell_name {
+  margin: 0;
+}
+
+.form-table td p.terminal_type {
+  /*margin: 0;*/
+  margin-top: 0.5em;
+  padding-top: 0.5em;
+  border-top: 1px dotted #ccc;
+}
+
+.waiting_mail_list {
+
+}
+
+.waiting_mail_list table {
+  width: 100%;
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  background-color: #fafafa;
+  border-collapse: collapse;
+}
+
+.waiting_mail_list table th {
+  text-align: center;
+}
+.waiting_mail_list table th,
+.waiting_mail_list table td {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+
+.waiting_mail_list table td:first-child {
+  text-align: center;
+  width: 15%;
+}
