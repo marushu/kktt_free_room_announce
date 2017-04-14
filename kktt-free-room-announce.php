@@ -267,9 +267,9 @@ class Kktt_Free_Room_Announce {
 			'post_type' => 'flamingo_inbound',
 		);
 		$flamingo_dates = get_posts( $args );
-		echo '<pre>';
-		var_export( $flamingo_dates );
-		echo '</pre>';
+		//echo '<pre>';
+		//var_export( $flamingo_dates );
+		//echo '</pre>';
 
 		$flamingo_dates_count = count( $flamingo_dates );
 
@@ -280,6 +280,8 @@ class Kktt_Free_Room_Announce {
 		for ( $i = 0; $i < $flamingo_dates_count; $i++ ) {
 
 			$post_id = $flamingo_dates[$i]->ID;
+			//var_dump( $post_id );
+
 			$your_email = get_post_meta( $post_id, '_field_your-email', true );
 			$your_name = get_post_meta( $post_id, '_field_your-name', true )
                 ? get_post_meta( $post_id, '_field_your-name', true )
@@ -298,8 +300,25 @@ class Kktt_Free_Room_Announce {
             //$test_cat = wp_get_post_terms( $post_id, 'flamingo_contact_tag' );
             //var_dump( $test_cat );
 
-			$terms = wp_get_post_terms( $post_id, 'flamingo_contact_tag', $args );
-			var_dump( $terms );
+			$terms = wp_get_post_terms( $post_id, 'flamingo_inbound_channel' );
+			//var_dump( $terms );
+			foreach ( $terms as $term ) {
+
+			    $term_name = $term->name;
+			    //var_dump( $term_name );
+			    if ( ! empty( $term ) && ! is_wp_error( $term ) && $term_name === 'お知らせ配信停止フォーム' ) {
+
+			        //var_dump( $flamingo_dates[$i]->ID );
+
+			        if ( ! empty( $post_id ) ) {
+
+			            wp_delete_post( $post_id );
+
+                    }
+
+                }
+
+            }
 
 
 			$your_waiting = explode( ',', $your_waiting );
@@ -319,27 +338,32 @@ class Kktt_Free_Room_Announce {
 
 		}
 
-		//var_dump( $post_id_arr );
-		//var_dump( $key_arr );
-
 		$total_arr = array();
 		$key_arr_count = count( $key_arr );
 		for ( $h = 0; $h < $key_arr_count; $h++ ) {
 
+			//var_dump( $mail_arr[ $h ] );
 			if ( ! array_key_exists( $key_arr[$h], $total_arr ) ) {
 				$total_arr[ $key_arr[$h] ]['email'] = (array) $mail_arr[ $h ];
 			} else {
-				$total_arr[ $key_arr[$h] ]['email'][] = $mail_arr[ $h ];
+
+			    if ( ! in_array( $mail_arr[ $h ], $total_arr[ $key_arr[$h] ]['email'] ) ) {
+
+				    $total_arr[ $key_arr[ $h ] ]['email'][] = $mail_arr[ $h ];
+
+			    }
+
 			}
 
-			$total_arr[ $key_arr[$h]]['post_id'] = $post_id_arr[$h];
+			$total_arr[ $key_arr[$h]]['post_id'] = $post_id_arr[ $h ];
 
 		}
 
 		$sort_flag = ksort( $total_arr );
-		echo '<pre>';
-		//var_export( $total_arr );
-		echo '</pre>';
+		var_dump( $total_arr );
+
+
+
 
 		$html = '';
 		if ( $sort_flag === true ) {
@@ -380,6 +404,11 @@ class Kktt_Free_Room_Announce {
                 $cell_data_status = isset( $this->options['kktt_free_room_table_set'][$key] )
                     ? $this->options['kktt_free_room_table_set'][$key]
                     : '';
+
+
+				//$mail = array_unique( $mail );
+				$mail = array_values( $mail );
+				//var_dump( $mail );
 
                 $this->send_email( $company_organization_name, $your_name, $cell_data_status, $key, $mail, $post_id );
 
