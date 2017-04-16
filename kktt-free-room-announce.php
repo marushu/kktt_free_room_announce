@@ -30,6 +30,11 @@ class Kktt_Free_Room_Announce {
     public $delete_flag = false;
     public $delete_address = '';
 
+
+    public $room_status_old = '';
+	public $room_status_new = '';
+
+
     protected $options;
 
 	/**
@@ -45,7 +50,6 @@ class Kktt_Free_Room_Announce {
 		add_action( 'wp_enqueue_scripts', array( $this, 'kktt_free_room_announce_front_end_enqueue_scripts' ), 999 );
 		add_shortcode( 'terminal_table', array( $this, 'add_terminal_table' ) );
 		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-		add_filter( 'pre_update_option_foo', array( $this, 'send_mail_when_status_changed' ), 10, 2 );
 
 	}
 
@@ -56,11 +60,13 @@ class Kktt_Free_Room_Announce {
 
 		$kktt_free_room_settings = $this->options;
 		if ( empty( $kktt_free_room_settings ) ) {
+
 			$default_value = array(
 				'kktt_free_room_table_set' => array(),
-				'kktt_cell_relation_email' => array(),
+				'sender_email_field'  => '',
 			);
 			update_option( 'kktt_free_room_announce_settings', $default_value );
+
 		}
 
 	}
@@ -125,6 +131,14 @@ class Kktt_Free_Room_Announce {
 			'kkttfreeannouncepage',
 			'kktt_free_room_announce_settings',
 			array( $this, 'data_sanitize' )
+		);
+
+		add_settings_field(
+			'kktt_sender_email_field',
+			__( '送信元メールアドレス', 'kktt-free-room-announce' ),
+			array( $this, 'kktt_from_email_render' ),
+			'kkttfreeannouncepage',
+			'kktt_free_room_announce_kkttfreeannouncepage_section'
 		);
 
 		add_settings_section(
@@ -213,7 +227,6 @@ class Kktt_Free_Room_Announce {
 				$value_in_negotiations = $room_info === 'in_negotiations' ? 'checked="checked"' : '';
 				$value_now_free = $room_info === 'now_free' ? 'checked="checked"' : '';
 				$value_default = empty( trim( $room_info ) ) ? 'checked="checked"' : '';
-
 				$value_home = $room_type === 'type_home' ? 'checked="checked"' : '';
 				$value_storage = $room_type === 'type_storage' ? 'checked="checked"' : '';
 				$value_type_default = empty( trim( $room_type ) ) ? 'checked="checked"' : '';
@@ -423,6 +436,25 @@ class Kktt_Free_Room_Announce {
 	}
 
 	/**
+	 * Output Sender e-mail field.
+	 */
+	public function kktt_from_email_render() {
+
+		$sender_email = isset( $this->options['kktt_sender_email_field'] )
+            ? trim( sanitize_email( $this->options['kktt_sender_email_field'] ) )
+            : '';
+
+		?>
+
+        <input type="text" name="kktt_free_room_announce_settings[kktt_sender_email_field]"
+               value="<?php echo esc_html( $sender_email ); ?>" size="50" maxlength="999">
+
+		<?php
+
+	}
+
+
+	/**
      * Get mail array for send.
 	 * @param $mail
 	 *
@@ -456,8 +488,6 @@ class Kktt_Free_Room_Announce {
 
 	public function send_email( $company_organization_name, $your_name, $cell_data_status, $key, $mail, $post_id, $flag ) {
 
-	    //var_dump( $mail );
-
 		if ( $cell_data_status === 'now_free' ) {
 
 			$message  = '';
@@ -475,14 +505,19 @@ e-mail :
 Web : 
 ******************************/';
 
+			$sender_email = isset( $this->options['kktt_sender_email_field'] )
+				? $this->options['kktt_sender_email_field']
+				: get_option( 'admin_email' );
 			$subject = '【鹿児島県共同トラックターミナル】空きが出ました';
 			//$message = esc_attr( $key ) . '空きになりました。';
-			$headers[] = 'From:' . sanitize_email( 'info@hibou-web.com' );
+			$headers[] = 'From:' . sanitize_email( $sender_email );
 			$attachments[] = '';
 
 			foreach ( (array) $mail as $email ) {
 
-				$send_to_waiting = wp_mail( $email, $subject, $message, $headers, $attachments );
+				add_filter( 'wp_mail_from', function( $sender_email ) { return sanitize_email( $sender_email ); }, 99999 );
+
+			    $send_to_waiting = wp_mail( $email, $subject, $message, $headers, $attachments );
 
 				if ( $send_to_waiting === true ) {
 
@@ -565,7 +600,7 @@ Web :
 
 				$room_info = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )] )
                     ? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )]
-                    : '';
+                    : 'now_free';
 				$company_name = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name'] )
 					? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name']
 					: '';
@@ -592,6 +627,10 @@ Web :
                         break;
                     case 'now_free' :
                         $room_status = '空きあり';
+                        break;
+
+                    default :
+	                    $room_status = '空きあり';
                         break;
 
                 }
