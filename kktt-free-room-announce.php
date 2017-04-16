@@ -13,7 +13,7 @@
  */
 
 if ( class_exists( 'Kktt_Free_Room_Announce' ) ) {
-	$kktt_free_room_announce = new Kktt_Free_Room_Announce;
+	$kktt_free_room_announce = new Kktt_Free_Room_Announce();
 }
 
 /**
@@ -26,6 +26,9 @@ class Kktt_Free_Room_Announce {
 
     public $repository_num = 4;
     public $max_column = 36;
+    public $stop_mail_address = '';
+    public $delete_flag = false;
+    public $delete_address = '';
 
     protected $options;
 
@@ -52,7 +55,6 @@ class Kktt_Free_Room_Announce {
 	public function activate() {
 
 		$kktt_free_room_settings = $this->options;
-
 		if ( empty( $kktt_free_room_settings ) ) {
 			$default_value = array(
 				'kktt_free_room_table_set' => array(),
@@ -150,7 +152,6 @@ class Kktt_Free_Room_Announce {
 
 	}
 
-
 	/**
 	 * Add description of Post Notifier.
 	 */
@@ -197,7 +198,9 @@ class Kktt_Free_Room_Announce {
 
 				}
 
-				$room_info = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )] ) ? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )] : '';
+				$room_info = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )] )
+                    ? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )]
+                    : '';
 				$company_name = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name'] )
 					? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name']
 					: '';
@@ -241,22 +244,17 @@ class Kktt_Free_Room_Announce {
 
 		}
 
-
 		$html .= '</div><!-- / .repository_outer -->' . "\n";
 
-		if ( is_admin() ) {
-			echo $html;
-		}
+        echo $html;
 
 	}
-
 
 	public function email_template_field_render() {
 
-		$options = get_option( 'kktt_free_room_announce_settings' );
+		$kktt_free_room_settings = $this->options;
 
 	}
-
 
 	/**
 	 * Output email list display at plugin admin panel.
@@ -267,10 +265,6 @@ class Kktt_Free_Room_Announce {
 			'post_type' => 'flamingo_inbound',
 		);
 		$flamingo_dates = get_posts( $args );
-		//echo '<pre>';
-		//var_export( $flamingo_dates );
-		//echo '</pre>';
-
 		$flamingo_dates_count = count( $flamingo_dates );
 
 		$key_arr = array();
@@ -280,8 +274,6 @@ class Kktt_Free_Room_Announce {
 		for ( $i = 0; $i < $flamingo_dates_count; $i++ ) {
 
 			$post_id = $flamingo_dates[$i]->ID;
-			//var_dump( $post_id );
-
 			$your_email = get_post_meta( $post_id, '_field_your-email', true );
 			$your_name = get_post_meta( $post_id, '_field_your-name', true )
                 ? get_post_meta( $post_id, '_field_your-name', true )
@@ -294,32 +286,46 @@ class Kktt_Free_Room_Announce {
                 ? get_post_meta( $post_id, '_field_your-waiting', true )
                 : '';
 
-			//var_dump( $your_waiting );
-
-
-            //$test_cat = wp_get_post_terms( $post_id, 'flamingo_contact_tag' );
-            //var_dump( $test_cat );
-
 			$terms = wp_get_post_terms( $post_id, 'flamingo_inbound_channel' );
-			//var_dump( $terms );
+
 			foreach ( $terms as $term ) {
 
 			    $term_name = $term->name;
-			    //var_dump( $term_name );
 			    if ( ! empty( $term ) && ! is_wp_error( $term ) && $term_name === 'お知らせ配信停止フォーム' ) {
 
-			        //var_dump( $flamingo_dates[$i]->ID );
+			        $this->delete_flag = true;
+			        $this->delete_address = get_post_meta( $post_id, '_field_your-email', true );
+			        $args = array(
+			            'post_type'       => 'flamingo_inbound',
+                        'meta_key'        => '_field_your-email',
+                        'meta_query'      => array(
+                            array(
+                                'key'     => '_field_your-email',
+                                'value'   => $this->delete_address,
+                                'compare' => '=',
+                            ),
+                        ),
+                    );
+			        $delete_posts = get_posts( $args );
 
-			        if ( ! empty( $post_id ) ) {
+				    /**
+				     * Delete post include stop notification request email address and set flag false.
+                     * Set flag = false, because through unset function unset( $mail[ $delete_index ] );
+				     */
+			        if ( ! empty( $delete_posts ) ) {
 
-			            wp_delete_post( $post_id );
+			            foreach ( $delete_posts as $delete_post ) {
+
+				            wp_delete_post( $delete_post->ID );
+
+                        }
+                        $this->delete_flag = false; // yes!!
 
                     }
 
                 }
 
             }
-
 
 			$your_waiting = explode( ',', $your_waiting );
 			$your_waiting_count = count( $your_waiting );
@@ -342,9 +348,10 @@ class Kktt_Free_Room_Announce {
 		$key_arr_count = count( $key_arr );
 		for ( $h = 0; $h < $key_arr_count; $h++ ) {
 
-			//var_dump( $mail_arr[ $h ] );
 			if ( ! array_key_exists( $key_arr[$h], $total_arr ) ) {
+
 				$total_arr[ $key_arr[$h] ]['email'] = (array) $mail_arr[ $h ];
+
 			} else {
 
 			    if ( ! in_array( $mail_arr[ $h ], $total_arr[ $key_arr[$h] ]['email'] ) ) {
@@ -360,10 +367,6 @@ class Kktt_Free_Room_Announce {
 		}
 
 		$sort_flag = ksort( $total_arr );
-		var_dump( $total_arr );
-
-
-
 
 		$html = '';
 		if ( $sort_flag === true ) {
@@ -381,20 +384,18 @@ class Kktt_Free_Room_Announce {
 
 			foreach ( $total_arr as $key => $data ) {
 
-				$mail = array_map( 'sanitize_email', $data['email'] );
-				$email = implode( ',', $mail );
+				$email = $this->get_mail_arr( $data['email'], $this->delete_flag, $this->delete_address );
+				$mail_str = implode( ',', $email );
 				$post_id = $data['post_id'];
 
-				//var_dump( $key );
-
-				if ( ! empty( $key ) ) {
+				if ( ! empty( $key ) && ! empty( $email ) ) {
 
 					$html .= '<tr>';
 					$html .= '<td>';
 					$html .= esc_html( $key );
 					$html .= '</td>';
 					$html .= '<td>';
-					$html .= $email;
+					$html .= $mail_str;
 					$html .= '</td>';
 					$html .= '</tr>';
 
@@ -405,12 +406,9 @@ class Kktt_Free_Room_Announce {
                     ? $this->options['kktt_free_room_table_set'][$key]
                     : '';
 
-
-				//$mail = array_unique( $mail );
-				$mail = array_values( $mail );
-				//var_dump( $mail );
-
-                $this->send_email( $company_organization_name, $your_name, $cell_data_status, $key, $mail, $post_id );
+                $mail = array_values( $email );
+                // Call send_email
+                $this->send_email( $company_organization_name, $your_name, $cell_data_status, $key, $email, $post_id, $this->delete_flag );
 
 			}
 
@@ -424,7 +422,41 @@ class Kktt_Free_Room_Announce {
 
 	}
 
-	public function send_email( $company_organization_name, $your_name, $cell_data_status, $key, $mail, $post_id ) {
+	/**
+     * Get mail array for send.
+	 * @param $mail
+	 *
+	 * @return array
+	 */
+	public function get_mail_arr( $mail, $delete_flag, $delete_address ) {
+
+	    $mail = array_map( 'sanitize_email', $mail );
+        $email = implode( ',', $mail );
+
+        if ( $delete_flag === true ) {
+
+	        $delete_index = array_search( $delete_address, $mail );
+	        unset( $mail[ $delete_index ] );
+	        $mail = array_values( (array) $mail );
+
+        }
+
+		return $mail;
+
+    }
+
+    public function get_mail_address_for_stop_sending( $post_id ) {
+
+	    $stop_sending_address = $post_id
+            ? get_post_meta( $post_id, '_field_your-email', true )
+            : '';
+	    return $stop_sending_address;
+
+    }
+
+	public function send_email( $company_organization_name, $your_name, $cell_data_status, $key, $mail, $post_id, $flag ) {
+
+	    //var_dump( $mail );
 
 		if ( $cell_data_status === 'now_free' ) {
 
@@ -460,45 +492,23 @@ Web :
 					 *
 					 */
 					$target_post = get_post( $post_id );
-					//var_dump( $target_post );
 					$waiting_cell_datas = get_post_meta( $post_id, '_field_your-waiting', true );
-					//var_dump( explode( ',', $waiting_cell_datas ) );
 					$waiting_cell_datas = explode( ',', $waiting_cell_datas );
-
-					//var_dump( $waiting_cell_datas );
-					//var_dump( $key );
 
 					if ( in_array( $key, $waiting_cell_datas ) ) {
 
-						echo '該当あり';
-
-						//delete_post_meta( $post_id, '_field_your-waiting', $key );
-						//echo 'あるよさ';
-						//var_dump( get_post_meta( $post_id, '_field_your-waiting', $key ) );
 						$before_meta = get_post_meta( $post_id, '_field_your-waiting', $key );
-						//var_dump( $before_meta );
-
 						$before_meta_to_array = explode( ',', $before_meta );
-						//var_dump( $before_meta_to_array );
 
 					if ( in_array( $key, $before_meta_to_array ) ) {
 
-						//
 						$array_position = array_search( $key, $before_meta_to_array );
 						unset( $before_meta_to_array[ $array_position ]);
-						//var_dump( $array_position );
-						//var_dump( $before_meta_to_array );
 
                     }
 						$unset_key_arr = array_values( $before_meta_to_array );
-						//var_dump( $unset_key_arr );
-
 						$unset_key__str = implode( ',', $unset_key_arr );
-						//var_dump( $unset_key__str );
-
-						$check = update_post_meta( $post_id, '_field_your-waiting', $unset_key__str );
-						//var_dump( $check );
-
+						update_post_meta( $post_id, '_field_your-waiting', $unset_key__str );
 
 					}
 
@@ -556,21 +566,14 @@ Web :
 				$room_info = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )] )
                     ? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )]
                     : '';
-                //var_dump( $room_info );
-
 				$company_name = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name'] )
 					? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name']
 					: '';
-
 				$room_type = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_type'] )
 					? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_type']
 					: '';
-				//var_dump( $room_type );
-
-				//var_dump( $room_info );
 				$cell_home_class = 'kktt_' . esc_attr( $room_info );
 				$cell_home_inside_class = 'inside_' . esc_attr( $room_info );
-
 				$cell_type_class = 'kktt_' . esc_attr( $room_type );
 				$cell_type_inside_class = 'inside_' . esc_attr( $room_type );
 
