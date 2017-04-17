@@ -5,14 +5,22 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  padding-top: 13.5em;
-  padding-left: 12.891014717%;
-  padding-bottom: 22em;
+  padding-top: 9.7em;
+  padding-left: 13.7%;
+  padding-bottom: 12em;
+
+}
+
+@media screen and (max-width: 767px) {
+
+  .repository_outer {
+    display: none;
+  }
 
 }
 
 .each_repository {
-  flex: 0 0 19.4%;
+  flex: 0 0 19.1%;
   position: relative;
 }
 
@@ -38,16 +46,17 @@
 }
 
 .each_repository td {
-  border-right: 1px solid #ccc;
+  /*border-right: 1px solid #ccc;*/
   border-bottom: 1px solid #ccc;
+  height: 17px;
   /*padding: 10px;*/
 }
 
 .each_repository div {
-  padding: 0.05em;
+  /*padding: 0.05em;*/
   position: relative;
   text-align: center;
-  line-height: 1.18;
+  line-height: 1;
 }
 
 .each_repository input[type="radio"] {
@@ -68,13 +77,14 @@
 .cell_name {
   font-size: 10px;
   font-weight: bold;
-  color: rgba( 77, 77, 77, .3 );
+  color: rgba( 77, 77, 77, .1 );
   position: relative;
   left: -68px;
   margin: 0;
   padding: 0;
   vertical-align: middle;
   text-align: left;
+  display: none;
 }
 
 .cell_status {
@@ -160,7 +170,7 @@ background-color: rgba( 169, 169, 169, 1 );
 }
 
 .room_examination {
-  margin: 20px 0;
+  margin: 20px 0 4em 0;
 }
 
 .room_examination__list {
@@ -169,21 +179,39 @@ background-color: rgba( 169, 169, 169, 1 );
 
 .room_examination__list li {
   display: inline-block;
-  font-size: 15px;
-  margin-right: 1em;
+  font-size: 12px;
+  margin-right: 35px;
+  font-weight: bold;
 
 }
 
-.room_examination__list li span {
+.room_examination__list li:last-child {
+  margin-right: 0;
+}
+
+.room_examination__list li:before {
+  content: '';
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: 65px;
+  height: 14px;
   margin-right: 4px;
   vertical-align: sub;
 }
+
+.ex_now_in_use:before {
+  background-color: #cacaca;
+}
+
+.ex_in_negotiations:before {
+  background-color: #f9ae3b;
+}
+
+.ex_now_free:before {
+  background-color: #9ebfd4;
+}
  
 .page-availability-list .common_content.type-page {
-  background: url("../images/bg_availavility_list.png") transparent no-repeat scroll center top;
+  background: url("../images/bg_availavility_list_1000.png") transparent no-repeat scroll center top;
 }
 
 

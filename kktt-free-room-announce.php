@@ -29,11 +29,7 @@ class Kktt_Free_Room_Announce {
     public $stop_mail_address = '';
     public $delete_flag = false;
     public $delete_address = '';
-
-
-    public $room_status_old = '';
-	public $room_status_new = '';
-
+    public $send_flag = '';
 
     protected $options;
 
@@ -50,6 +46,11 @@ class Kktt_Free_Room_Announce {
 		add_action( 'wp_enqueue_scripts', array( $this, 'kktt_free_room_announce_front_end_enqueue_scripts' ), 999 );
 		add_shortcode( 'terminal_table', array( $this, 'add_terminal_table' ) );
 		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+		/**
+		 * Compare old and new option data.
+         * If that is not same, then set send email flag to true. :)
+		 */
+		//add_filter( 'pre_update_option_kktt_free_room_announce_settings', array( $this, 'check_room_info_options' ), 10, 2 );
 
 	}
 
@@ -175,6 +176,33 @@ class Kktt_Free_Room_Announce {
 
 	}
 
+	public function check_room_info_options( $new_value, $old_value ) {
+
+	    // Check test mode
+		if ( $new_value !== $old_value && ! empty( $new_value ) ) {
+
+            //var_dump( $old_value );
+
+			foreach ( $old_value['kktt_free_room_table_set'] as $key => $old_data ) {
+
+			    if ( $old_data === '' ) {
+
+			        $this->send_flag = false;
+
+                } else {
+
+				    $this->send_flag = true;
+
+                }
+
+			}
+
+			//update_option( 'some_option_changed', $new_value );
+		}
+
+		return $new_value;
+	}
+
 
 	/**
 	 * Output text field.
@@ -215,6 +243,7 @@ class Kktt_Free_Room_Announce {
 				$room_info = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )] )
                     ? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . sprintf( '%02d', ( $j + 1 ) )]
                     : '';
+
 				$company_name = isset( $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name'] )
 					? $this->options['kktt_free_room_table_set'][$colunm_name_prefix . ( $j + 1 ) . '_company_name']
 					: '';
@@ -433,6 +462,8 @@ class Kktt_Free_Room_Announce {
 
 		echo $html;
 
+		//var_dump( $this->send_flag );
+
 	}
 
 	/**
@@ -517,7 +548,7 @@ Web :
 
 				add_filter( 'wp_mail_from', function( $sender_email ) { return sanitize_email( $sender_email ); }, 99999 );
 
-			    $send_to_waiting = wp_mail( $email, $subject, $message, $headers, $attachments );
+				$send_to_waiting = wp_mail( $email, $subject, $message, $headers, $attachments );
 
 				if ( $send_to_waiting === true ) {
 
@@ -620,7 +651,7 @@ Web :
 				switch ( $room_info ) {
 
                     case 'in_use' :
-                        $room_status = '契約中';
+                        $room_status = '';
                         break;
                     case 'in_negotiations' :
                         $room_status = '商談中';
@@ -650,6 +681,16 @@ Web :
 		}
 
 		$html .= '</div><!-- / .repository_outer -->' . "\n";
+
+		$html .= '<div class="room_examination">';
+		$html .= '<ul class="room_examination__list">';
+
+		$html .= '<li class="ex_now_in_use cell_explanation__list_item">契約済み</li>';
+		$html .= '<li class="ex_in_negotiations cell_explanation__list_item">商談中</li>';
+		$html .= '<li class="ex_now_free cell_explanation__list_item">空きあり</li>';
+
+		$html .= '</ul>';
+		$html .= '</div>';
 
 		return $html;
 
